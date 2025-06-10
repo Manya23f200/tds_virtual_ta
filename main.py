@@ -1,47 +1,53 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
-from fastapi.middleware.cors import CORSMiddleware # <--- ADD THIS LINE
+from fastapi.middleware.cors import CORSMiddleware
 
 # FastAPI application instance
 app = FastAPI()
 
-# <--- ADD THIS BLOCK FOR CORS MIDDLEWARE
+# CORS middleware (as we added before)
 origins = [
-    "https://exam.sanand.workers.dev",  # Crucial: Allow the specific origin of your evaluation platform
-    "https://tds-virtual-ta-9.onrender.com", # Your own API URL (sometimes needed for subpaths/internal calls)
-    "http://localhost", # For local development
-    "http://localhost:8000", # For local development
-    # Add any other origins you need to allow
+    "https://exam.sanand.workers.dev",
+    "https://tds-virtual-ta-9.onrender.com",
+    "http://localhost",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# END OF CORS MIDDLEWARE BLOCK --->
 
 # Pydantic model for the input question
 class QuestionInput(BaseModel):
     question: str
     image: Optional[str] = None
 
-# Pydantic model for a single link
+# Pydantic model for a single link (if used)
 class Link(BaseModel):
     url: str
 
-# You will also have your API endpoint defined here.
-# For example, your POST /api/ endpoint:
-# @app.post("/api/")
-# async def answer_question(question_data: QuestionInput):
-#     # Your API logic goes here
-#     # This is where you process the 'question_data.question'
-#     # and return a JSON response, e.g.:
-#     return {"answer": "This is a sample answer for: " + question_data.question}
+# ********* ADD THIS API ENDPOINT *********
 
-# Make sure you have an actual API endpoint defined, like the one above,
-# that matches what promptfoo and the submission system expect.
-# The curl command implied a POST to /api/ that takes a 'question' and returns an 'answer'.
+class AnswerResponse(BaseModel):
+    answer: str
+    sources: list[str]
+    timestamp: str
+
+@app.post("/api/", response_model=AnswerResponse) # This decorator defines a POST endpoint at the /api/ path
+async def answer_question(question_data: QuestionInput):
+    # This is where your actual API logic would go to process the question.
+    # For now, let's return a simple placeholder response to confirm it works.
+    print(f"Received question: {question_data.question}") # This will appear in Render logs
+    return AnswerResponse(
+        answer=f"You asked: {question_data.question}",
+        sources=["example_source"],
+        timestamp="2025-06-11T00:00:00Z"
+    )
+    # The submission platform might expect a specific response format,
+    # so ensure your actual logic returns what's expected.
+    # The 'answer' key is important because promptfoo was configured for it.
